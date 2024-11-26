@@ -10,5 +10,6 @@ Please download from [inverted-index.json](https://buffalo.box.com/s/bfeg1acj24d
 Go to root directory and run:
    ```bash
    python app.py
+```
 
 Open browser and navigate to localhost
