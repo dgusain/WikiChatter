@@ -9,8 +9,6 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import PorterStemmer
 from tqdm import tqdm
-
-# Ensure NLTK resources are downloaded
 import nltk
 nltk.download('punkt')
 nltk.download('stopwords')

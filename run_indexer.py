@@ -27,12 +27,17 @@ class IndexingPipeline:
             return
 
         print("Indexing documents...")
+        topics = {}
+        titles = set()
         for item in tqdm(data, total=len(data)):
-            doc_id, document = self.preprocessor.get_doc_id_and_text(item)
+            # doc_id, document = self.preprocessor.get_doc_id_and_text(item)
+            doc_id, document, topic, title = self.preprocessor.get_doc_id_and_text_and_topic_and_title(item)
             if not doc_id or not document:
                 continue  # Skip if essential fields are missing
+            topics[topic] = topics.get(topic, 0) + 1
+            titles.add(title)
             tokenized_document = self.preprocessor.tokenizer(document)
-            self.indexer.generate_inverted_index(doc_id, tokenized_document)
+            self.indexer.generate_inverted_index(doc_id, tokenized_document, topic)
 
         print("Sorting terms in the inverted index...")
         self.indexer.sort_terms()
@@ -60,7 +65,9 @@ class IndexingPipeline:
         metadata = {
             'total_documents': self.indexer.total_documents,
             'document_frequency': self.indexer.document_frequency,
-            'token_count': self.indexer.token_count
+            'token_count': self.indexer.token_count,
+            'topics_count': topics,
+            'titles': list(titles)
         }
         print(f"Saving metadata to '{self.metadata_path}'...")
         with open(self.metadata_path, 'w', encoding='utf-8') as meta_file:
@@ -69,7 +76,7 @@ class IndexingPipeline:
         print("All data has been successfully saved.")
 
 if __name__ == "__main__":
-    CORPUS_PATH = 'final_scrapped.json'
+    CORPUS_PATH = 'dakshesh_scrapped.json'
     INDEX_PATH = 'inverted_index.json'
     METADATA_PATH = 'metadata.json'
 

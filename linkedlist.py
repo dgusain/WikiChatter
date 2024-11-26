@@ -9,7 +9,7 @@ import math
 
 class Node:
 
-    def __init__(self, value=None, next=None, tf = 0):
+    def __init__(self, value=None, next=None, tf = 0, topic = None):
         """ Class to define the structure of each node in a linked list (postings list).
             Value: document id, Next: Pointer to the next node
             Add more parameters if needed.
@@ -19,7 +19,8 @@ class Node:
         self.value = value
         self.tf = tf
         self.tfidf = 0.0
-        
+        self.topic = topic
+
 class LinkedList:
     """ Class to define a linked list (postings list). Each element in the linked list is of the type 'Node'
         Each term in the inverted index has an associated linked list object.
@@ -84,13 +85,13 @@ class LinkedList:
                 slow = fast
             n_skips -= 1
             
-    def insert_in_order(self, doc_id):
+    def insert_in_order(self, doc_id, topic):
         """ Write logic to add new elements to the linked list.
             Insert the element at an appropriate position, such that elements to the left are lower than the inserted
             element, and elements to the right are greater than the inserted element.
             To be implemented. """
         if not self.start_node:
-            self.start_node = Node(value=doc_id, tf=1)
+            self.start_node = Node(value=doc_id, tf=1, topic=topic)
             self.length += 1
             return
         
@@ -104,7 +105,7 @@ class LinkedList:
         if current and current.value == doc_id:
             current.tf += 1
         else:
-            new_node = Node(value=doc_id, tf=1)
+            new_node = Node(value=doc_id, tf=1, topic=topic)
             if prev is None:
                 new_node.next = self.start_node
                 self.start_node = new_node
@@ -122,7 +123,8 @@ class LinkedList:
         while current:
             postings.append({
                 'doc_id': current.value,
-                'tfidf': current.tfidf
+                'tfidf': current.tfidf,
+                'topic': current.topic
             })
             current = current.next
         return postings

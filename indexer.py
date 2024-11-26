@@ -21,7 +21,7 @@ class Indexer:
             Already implemented."""
         return self.inverted_index
 
-    def generate_inverted_index(self, doc_id, tokenized_document):
+    def generate_inverted_index(self, doc_id, tokenized_document, topic):
         """ This function adds each tokenized document to the index. This in turn uses the function add_to_index
             Already implemented."""
         
@@ -29,7 +29,7 @@ class Indexer:
         unique_terms = set(tokenized_document)
 
         for t in tokenized_document:
-            self.add_to_index(t, doc_id)
+            self.add_to_index(t, doc_id, topic)
 
         for term in unique_terms:
             if term in self.document_frequency:
@@ -39,7 +39,7 @@ class Indexer:
 
         self.token_count[doc_id] = len(tokenized_document)
 
-    def add_to_index(self, term_, doc_id_):
+    def add_to_index(self, term_, doc_id_, topic):
         """ This function adds each term & document id to the index.
             If a term is not present in the index, then add the term to the index & initialize a new postings list (linked list).
             If a term is present, then add the document to the appropriate position in the posstings list of the term.
@@ -47,7 +47,7 @@ class Indexer:
         
         if term_ not in self.inverted_index:
             self.inverted_index[term_] = LinkedList()
-        self.inverted_index[term_].insert_in_order(doc_id_)
+        self.inverted_index[term_].insert_in_order(doc_id_, topic)
 
     def sort_terms(self):
         """ Sorting the index by terms.

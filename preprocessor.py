@@ -23,15 +23,26 @@ class Preprocessor:
         arr = doc.split("\t")     
         return int(arr[0]), arr[1]
 
-    def get_doc_id_and_text(self, json_item):
+    # def get_doc_id_and_text(self, json_item):
+    #     """
+    #     Extract doc_id (revision_id) and document text from a JSON item.
+    #     """
+    #     revision_id = json_item.get('revision_id')
+    #     title = json_item.get('title', '')
+    #     summary = json_item.get('summary', '')
+    #     combined_text = f"{title} {summary}"
+    #     return revision_id, combined_text
+
+    def get_doc_id_and_text_and_topic_and_title(self, json_item):
         """
         Extract doc_id (revision_id) and document text from a JSON item.
         """
         revision_id = json_item.get('revision_id')
+        topic = json_item.get('topic', '')
         title = json_item.get('title', '')
         summary = json_item.get('summary', '')
         combined_text = f"{title} {summary}"
-        return revision_id, combined_text
+        return revision_id, combined_text, topic, title
 
     def tokenizer(self, text):
         """ Implement logic to pre-process & tokenize document text.
