@@ -15,7 +15,6 @@ class IndexingPipeline:
         self.indexer = Indexer()
 
     def run_indexer(self):
-        """Read the corpus and build the inverted index."""
         try:
             with open(self.corpus_path, 'r', encoding='utf-8') as fp:
                 data = json.load(fp)
@@ -76,7 +75,7 @@ class IndexingPipeline:
         print("All data has been successfully saved.")
 
 if __name__ == "__main__":
-    CORPUS_PATH = 'dakshesh_scrapped.json'
+    CORPUS_PATH = 'final_scrapped.json'
     INDEX_PATH = 'inverted_index.json'
     METADATA_PATH = 'metadata.json'
 

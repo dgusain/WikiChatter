@@ -1,5 +1,3 @@
-<!-- templates/index.html -->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,29 +6,42 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-    <div class="chat-container">
-        <h1>Wikipedia Q/A Chatbot</h1>
-        <div id="chat-box" class="chat-box">
-            <!-- Chat messages will appear here -->
+    <div class="main-container">
+        <!-- TF-IDF Data Column -->
+        <div id="tfidf-box" class="tfidf-box">
+            <h2>TF-IDF Data</h2>
+            <div id="tfidf-content">
+                <!-- TF-IDF data will appear here -->
+            </div>
         </div>
-        <form id="chat-form" class="chat-form">
-            <input type="text" id="user-input" placeholder="Type your message here..." autocomplete="off" required>
-            <button type="submit">Send</button>
-        </form>
+
+        <!-- Chat Window -->
+        <div class="chat-container">
+            <h1>Wikipedia Q/A Chatbot</h1>
+            <div id="chat-box" class="chat-box">
+                <!-- Chat messages will appear here -->
+            </div>
+            <form id="chat-form" class="chat-form">
+                <input type="text" id="user-input" placeholder="Type your message here..." autocomplete="off" required>
+                <button type="submit">Send</button>
+            </form>
+        </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
         const chatForm = document.getElementById('chat-form');
         const userInput = document.getElementById('user-input');
         const chatBox = document.getElementById('chat-box');
+        const tfidfContent = document.getElementById('tfidf-content');
 
-        chatForm.addEventListener('submit', function(e) {
+        chatForm.addEventListener('submit', function (e) {
             e.preventDefault();
             const message = userInput.value.trim();
             if (message === '') return;
 
             // Display user message
-            appendMessage('You', message);
+            appendMessage('user', message);
             userInput.value = '';
 
             // Send message to server
@@ -41,24 +52,54 @@
                 },
                 body: JSON.stringify({ message: message }),
             })
-            .then(response => response.json())
-            .then(data => {
-                // Display assistant response
-                appendMessage('Chatbot', data.response);
-                // Scroll to bottom
-                chatBox.scrollTop = chatBox.scrollHeight;
-            })
-            .catch((error) => {
-                console.error('Error:', error);
-            });
+                .then(response => response.json())
+                .then(data => {
+                    // Display assistant response
+                    appendMessage('chatbot', data.response, true);
+
+                    // Display TF-IDF data
+                    displayTfidfData(data.tfidf_data);
+
+                    // Scroll to bottom of chat
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                });
         });
 
-        function appendMessage(sender, message) {
+        function appendMessage(sender, message, isMarkdown = false) {
             const messageElement = document.createElement('div');
-            messageElement.classList.add('message');
-            messageElement.innerHTML = `<strong>${sender}:</strong> ${message}`;
+            messageElement.classList.add('message', sender);
+            const content = isMarkdown ? marked.parse(message) : message;
+            messageElement.innerHTML = `<div class="bubble">${content}</div>`;
             chatBox.appendChild(messageElement);
         }
+
+        function displayTfidfData(tfidfData) {
+            tfidfContent.innerHTML = ''; // Clear previous data
+            if (tfidfData && tfidfData.length > 0) {
+                tfidfData.forEach((entry, index) => {
+                    const entryDiv = document.createElement('div');
+                    entryDiv.classList.add('tfidf-entry');
+                    entryDiv.innerHTML = `
+                        <h3>Query ${index + 1}: ${entry.query}</h3>
+                        <p><strong>Tokens:</strong> ${entry.tokens.join(', ')}</p>
+                        <p><strong>Comparisons:</strong> ${entry.comparisons}</p>
+                        <h4>Top TF-IDF Scores:</h4>
+                        <ul>
+                            ${entry.tfidf_scores.map(doc => `
+                                <li>Doc ID: ${doc.doc_id}, Score: ${doc.score.toFixed(4)}</li>
+                            `).join('')}
+                        </ul>
+                    `;
+                    tfidfContent.appendChild(entryDiv);
+                });
+            } else {
+                tfidfContent.innerHTML = '<p>No TF-IDF data available.</p>';
+            }
+        }
+
     </script>
 </body>
 </html>

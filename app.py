@@ -1,12 +1,13 @@
 # app2.py
-
+# export FLASK_ENV=production - write this before running the code
 import os
 import json
 from flask import Flask, render_template, request, jsonify, session
 from flask_session import Session
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
-from langchain.chat_models import ChatOpenAI
+from langchain_community.chat_models import ChatOpenAI
+#from langchain.chat_models import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
 from dotenv import load_dotenv
 
@@ -17,7 +18,12 @@ from collections import defaultdict
 import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
-from nltk.stem import PorterStemmer
+from nltk.stem import WordNetLemmatizer
+import warnings
+warnings.filterwarnings("ignore")  # Ignore all the warnings, avoid clutter in console output
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", module="langchain")
+
 
 # Load environment variables
 load_dotenv()
@@ -25,8 +31,8 @@ dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 
 # Initialize NLTK resources
-nltk.download('punkt')
-nltk.download('stopwords')
+#nltk.download('punkt')
+#nltk.download('stopwords')
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'your_secret_key_here')  # Replace with a secure secret key
@@ -47,20 +53,16 @@ OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 class Preprocessor:
     def __init__(self):
         self.stop_words = set(stopwords.words('english'))
-        # self.stemmer = PorterStemmer()
-        self.ps = PorterStemmer()
+        self.lemmatizer = WordNetLemmatizer()
         self.punctuation_table = str.maketrans('', '', string.punctuation)
 
     def tokenize(self, text):
-        """ Implement logic to pre-process & tokenize document text.
-            Write the code in such a way that it can be re-used for processing the user's query.
-            To be implemented."""
         sentence = text.lower()
         sentence = re.sub(r'[^a-zA-Z0-9\s]', ' ', sentence)
         sentence = re.sub(r'\s+', ' ', sentence).strip()  
         words = sentence.split()
         words = [w for w in words if not w in self.stop_words]
-        tokens = [self.ps.stem(token) for token in words]
+        tokens = [self.lemmatizer.lemmatize(token) for token in words]
         return tokens
     
 class DocumentRetriever:
@@ -71,13 +73,10 @@ class DocumentRetriever:
         self.doc_id_to_summary = self.load_scrapped_data(scrapped_data_path)
 
     def load_inverted_index(self, path):
-        """
-        Load the inverted index from a JSON file.
-        """
         try:
             with open(path, 'r', encoding='utf-8') as f:
                 inverted_index = json.load(f)
-            print(f"Inverted index loaded from '{path}'.")
+            #print(f"Inverted index loaded from '{path}'.")
             return inverted_index
         except FileNotFoundError:
             print(f"Error: The file '{path}' was not found.")
@@ -87,13 +86,10 @@ class DocumentRetriever:
             return {}
 
     def load_metadata(self, path):
-        """
-        Load metadata from a JSON file.
-        """
         try:
             with open(path, 'r', encoding='utf-8') as f:
                 metadata = json.load(f)
-            print(f"Metadata loaded from '{path}'.")
+            #print(f"Metadata loaded from '{path}'.")
             return metadata
         except FileNotFoundError:
             print(f"Error: The file '{path}' was not found.")
@@ -103,9 +99,6 @@ class DocumentRetriever:
             return {}
 
     def load_scrapped_data(self, path):
-        """
-        Load the scrapped data and create a mapping from doc_id to summary.
-        """
         try:
             with open(path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
@@ -115,7 +108,7 @@ class DocumentRetriever:
                 summary = item.get('summary', '')
                 if revision_id:
                     doc_id_to_summary[revision_id] = summary
-            print(f"Scrapped data loaded from '{path}'.")
+            #print(f"Scrapped data loaded from '{path}'.")
             return doc_id_to_summary
         except FileNotFoundError:
             print(f"Error: The file '{path}' was not found.")
@@ -125,10 +118,6 @@ class DocumentRetriever:
             return {}
 
     def _daat_and_with_tfidf(self, terms):
-        """
-        Document-at-a-Time AND retrieval with TF-IDF scoring.
-        Returns a list of tuples (doc_id, cumulative_tfidf) sorted by tfidf descending.
-        """
         inverted_index = self.inverted_index
         # metadata = self.metadata
         # total_documents = metadata.get('total_documents', 0)
@@ -166,9 +155,6 @@ class DocumentRetriever:
         return sorted_docs, total_comparisons
 
     def retrieve_top_k(self, query, k=3):
-        """
-        Given a query, retrieve the top-k relevant document summaries.
-        """
         # Preprocess the query
         tokens = self.preprocessor.tokenize(query)
         if not tokens:
@@ -176,11 +162,12 @@ class DocumentRetriever:
             return []
 
         print(f"Processed Query Terms: {tokens}")
-
+        #tokens= ['taj', 'mahal','history']
+        #print(tokens)
         # Retrieve and rank documents
         ranked_docs, comparisons = self._daat_and_with_tfidf(tokens)
-        print(f"Total Comparisons Made: {comparisons}")
-        print(f"Number of Documents Retrieved: {len(ranked_docs)}")
+        #print(f"Total Comparisons Made: {comparisons}")
+        #print(f"Number of Documents Retrieved: {len(ranked_docs)}")
 
         # Get top-k documents
         top_k_docs = ranked_docs[:k]
@@ -198,7 +185,7 @@ class DocumentRetriever:
                 'score': score
             })
 
-        return summaries
+        return summaries, comparisons, tokens
 
 
 
@@ -210,44 +197,35 @@ llm = ChatOpenAI(model=OLLAMA_MODEL, temperature=0.2)  # Adjust temperature as n
 
 # Paraphrase question
 def rephrase_question_with_history(chat_history, question):
+    # currently takes only the last question as chat history. Need to change this to append all previous convos for this session as chat.
     template = """
-    Given the following conversation and a follow-up question, rephrase the follow-up question to be a standalone question.
-    
+    Rephrase the following question to 5 standalone queries, each separated by '|', suitable for information retrieval. Ensure it contains all necessary context without relying on previous conversations.
     <chat_history>
       {chat_history}
     </chat_history>
     
     Follow Up Input: {question}
-    Standalone question:
+    Standalone questions:
     """
-
-    # Define system message if necessary
-    system_message = "You are an assistant that rephrases follow-up questions to be standalone questions."
-
-    # Initialize the ChatOpenAI LLM
+    system_message = "You are an assistant that rephrases follow-up questions to be standalone questions, containing only important query terms."
     llm = ChatOpenAI(model=OLLAMA_MODEL, temperature=0.2)
-
-    # Create PromptTemplate
     prompt = PromptTemplate.from_template(template)
     formatted_prompt = prompt.format(chat_history=chat_history, question=question)
-
-    # Prepare messages
     messages = [
         {"role": "system", "content": system_message},
         {"role": "user", "content": formatted_prompt}
     ]
-
-    # Invoke the LLM
+    # why not just pass the messages dict as the chat history?
     response = llm.invoke(messages)
-
-    print(f'response is {response}')
-    return response['choices'][0]['message']['content'] if 'choices' in response else str(response)
-
-# Define Prompt Templates
+    content = response.content
+    if content:
+            return content.strip()  
+    else:
+            return "Error: Response content not found."
 
 # Intent Classification Prompt
 intent_template = """
-You are an intelligent assistant. Determine the intent of the user's input. Answer with either "chitchat" or "query".
+You are an intelligent assistant. Determine the intent of the user's input based on the conversation history. Answer with either "chitchat" or "query".
 
 Conversation History:
 {conversation_history}
@@ -263,7 +241,7 @@ intent_prompt = PromptTemplate(
 
 # Response Generation Prompt for Informational Queries
 response_template = """
-You are an expert researcher. Use the following context to answer the user's question accurately and concisely.
+You are an expert researcher with knowledge based on wikipedia. Use the following context to answer the user's question accurately and concisely. You are smart enough to handle edge cases. Like if there is only one relevant result, formulate it to generate an answer similar to the question asked. If there is no relavant data found, inform the user, and don't return an answer, else answer the question in coherence to the first question asked. Provide DocIDs at the end, to indicate references used.
 
 Context:
 {context}
@@ -332,10 +310,11 @@ def get_response():
 
     # Retrieve conversation history
     conversation_history = memory.load_memory_variables({})['conversation_history']
-    print(f'conversation history is {conversation_history}')
+    #print(f'conversation history is {conversation_history}')
     standalone_question = rephrase_question_with_history(conversation_history, user_input)
 
     print(f'paraphrased question is: {standalone_question}')
+    questions = standalone_question.split('|')
     # Step 1: Determine Intent
     intent = intent_chain.invoke({
         "conversation_history": conversation_history,
@@ -343,11 +322,36 @@ def get_response():
     })["text"]
     intent = intent.strip().lower()
     print(f"Determined Intent: {intent}")
-
+    tfidf_data = []
     if 'query' in intent:
         # Informational Query Handling
-        summaries = retriever.retrieve_top_k(user_input, k=10)
-
+        total_context = ""
+        total_q = ""
+        for q in questions:
+            summaries, comparisons, tokens = retriever.retrieve_top_k(q, k=5)
+            if summaries:
+                context = ""
+                for idx, doc in enumerate(summaries, start=1):
+                    context += f"Document{idx} (Doc ID: {doc['doc_id']}): {doc['summary']}\n"
+                tfidf_data.append({
+                    'query':q,
+                    'tfidf_scores':summaries,
+                    'comparisons':comparisons,
+                    'tokens':tokens
+                })
+            else:
+                context = "No relevant information found for this question\n"
+            total_context += f"rephrased question:{q} \n context:{context}"
+            total_q += q
+        print("Total context:\n", total_context)
+        print("Total Q:\n", total_q)
+        print("Actual question:\n", questions[0])
+        breakpoint
+        answer = response_chain.invoke({
+            "context": total_context,
+            "user_input": total_q
+        })["text"]
+        '''
         if summaries:
             # Prepare context from summaries
             context = ""
@@ -359,19 +363,24 @@ def get_response():
                 "context": context,
                 "user_input": standalone_question
             })["text"]
+            
         else:
             answer = "I'm sorry, I couldn't find any relevant information on that topic."
+            '''
     else:
         # Chitchat Handling
         answer = chitchat_chain.invoke({
             "conversation_history": conversation_history,
-            "user_input": standalone_question
+            "user_input": " ".join(questions)
         })["text"]
 
     # Append assistant response to memory
     memory.save_context({"assistant_output": answer}, {"assistant_output": answer})
 
-    return jsonify({'response': answer})
+    return jsonify({
+        'response': answer,
+        'tfidf_data':tfidf_data
+        })
 
 if __name__ == '__main__':
     app.run(debug=True)

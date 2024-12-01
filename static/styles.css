@@ -3,14 +3,23 @@
 body {
     font-family: Arial, sans-serif;
     background-color: #f2f2f2;
+    margin: 0;
+    padding: 0;
+}
+
+.main-container {
+    display: flex;
+    flex-direction: row;
+    max-width: 1200px;
+    margin: 20px auto;
+    gap: 20px;
 }
 
 .chat-container {
-    width: 500px;
-    margin: 50px auto;
+    width: 800px;
     background-color: #fff;
     border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     padding: 20px;
 }
 
@@ -20,16 +29,48 @@ h1 {
 }
 
 .chat-box {
-    height: 400px;
+    height: 600px;
     overflow-y: scroll;
     border: 1px solid #ddd;
     padding: 10px;
     margin-bottom: 20px;
     background-color: #fafafa;
+    display: flex;
+    flex-direction: column;
 }
 
 .message {
+    display: flex;
     margin-bottom: 15px;
+}
+
+.message.user {
+    justify-content: flex-end; /* Align user message to the right */
+}
+
+.message.chatbot {
+    justify-content: flex-start; /* Align chatbot message to the left */
+}
+
+.message .bubble {
+    max-width: 70%;
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 14px;
+    word-wrap: break-word;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.message.user .bubble {
+    background-color: #e0f7fa; /* Light blue for user */
+    color: #004d40;
+    border-top-right-radius: 0; /* Make the right corner sharp */
+}
+
+.message.chatbot .bubble {
+    background-color: #ffe0b2; /* Light orange for chatbot */
+    color: #4e342e;
+    border-top-left-radius: 0; /* Make the left corner sharp */
 }
 
 .chat-form {
@@ -55,4 +96,34 @@ h1 {
 
 .chat-form button:hover {
     background-color: #45a049;
+}
+
+.tfidf-box {
+    width: 300px;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    overflow-y: auto;
+    max-height: 700px;
+}
+
+.tfidf-box h2 {
+    text-align: center;
+    color: #333;
+}
+
+.tfidf-entry {
+    margin-bottom: 20px;
+}
+
+.tfidf-entry h3 {
+    margin-bottom: 5px;
+    font-size: 16px;
+    color: #555;
+}
+
+.tfidf-entry p, .tfidf-entry ul {
+    font-size: 14px;
+    color: #444;
 }
