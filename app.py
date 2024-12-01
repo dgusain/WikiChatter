@@ -106,8 +106,12 @@ class DocumentRetriever:
             for item in data:
                 revision_id = item.get('revision_id')
                 summary = item.get('summary', '')
+                url = item.get('url', 'URL not found')  # Include the URL
                 if revision_id:
-                    doc_id_to_summary[revision_id] = summary
+                    doc_id_to_summary[revision_id] = {
+                        'summary':summary,
+                        'url': url
+                    }
             #print(f"Scrapped data loaded from '{path}'.")
             return doc_id_to_summary
         except FileNotFoundError:
@@ -241,7 +245,7 @@ intent_prompt = PromptTemplate(
 
 # Response Generation Prompt for Informational Queries
 response_template = """
-You are an expert researcher with knowledge based on wikipedia. Use the following context to answer the user's question accurately and concisely. You are smart enough to handle edge cases. Like if there is only one relevant result, formulate it to generate an answer similar to the question asked. If there is no relavant data found, inform the user, and don't return an answer, else answer the question in coherence to the first question asked. Provide DocIDs at the end, to indicate references used.
+You are an expert researcher with knowledge based on wikipedia. Use the following context to answer the user's question accurately and concisely. You are smart enough to handle edge cases. Like if there is only one relevant result, formulate it to generate an answer similar to the question asked. If there is no relavant data found, inform the user, and don't return an answer, else answer the question in coherence to the first question asked. Provide urls at the end, to indicate references used.
 
 Context:
 {context}
@@ -329,6 +333,7 @@ def get_response():
             if summaries:
                 context = ""
                 for idx, doc in enumerate(summaries, start=1):
+                    url = retriever.doc_id_to_summary.get(doc['doc_id'], {}).get('url', 'URL not found')
                     context += f"Document{idx} (Doc ID: {doc['doc_id']}): {doc['summary']}\n"
                 tfidf_data.append({
                     'query':q,
