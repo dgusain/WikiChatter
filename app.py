@@ -305,10 +305,7 @@ def get_response():
     if not user_input:
         return jsonify({'response': "I didn't receive any input."})
 
-    # Append user input to memory
     memory.save_context({"user_input": user_input}, {"user_input": user_input})
-
-    # Retrieve conversation history
     conversation_history = memory.load_memory_variables({})['conversation_history']
     #print(f'conversation history is {conversation_history}')
     standalone_question = rephrase_question_with_history(conversation_history, user_input)
@@ -351,22 +348,6 @@ def get_response():
             "context": total_context,
             "user_input": total_q
         })["text"]
-        '''
-        if summaries:
-            # Prepare context from summaries
-            context = ""
-            for idx, doc in enumerate(summaries, start=1):
-                context += f"Document {idx} (Doc ID: {doc['doc_id']}): {doc['summary']}\n"
-
-            # Generate response using context
-            answer = response_chain.invoke({
-                "context": context,
-                "user_input": standalone_question
-            })["text"]
-            
-        else:
-            answer = "I'm sorry, I couldn't find any relevant information on that topic."
-            '''
     else:
         # Chitchat Handling
         answer = chitchat_chain.invoke({

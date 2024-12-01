@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Wikipedia Q/A Chatbot</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Include Chart.js -->
 </head>
 <body>
     <div class="main-container">
@@ -11,7 +12,7 @@
         <div id="tfidf-box" class="tfidf-box">
             <h2>TF-IDF Data</h2>
             <div id="tfidf-content">
-                <!-- TF-IDF data will appear here -->
+                <!-- TF-IDF details and charts will appear here -->
             </div>
         </div>
 
@@ -33,7 +34,7 @@
         const chatForm = document.getElementById('chat-form');
         const userInput = document.getElementById('user-input');
         const chatBox = document.getElementById('chat-box');
-        const tfidfContent = document.getElementById('tfidf-content');
+        const tfidfContent = document.getElementById('tfidf-content'); // Define tfidfContent container
 
         chatForm.addEventListener('submit', function (e) {
             e.preventDefault();
@@ -56,8 +57,6 @@
                 .then(data => {
                     // Display assistant response
                     appendMessage('chatbot', data.response, true);
-
-                    // Display TF-IDF data
                     displayTfidfData(data.tfidf_data);
 
                     // Scroll to bottom of chat
@@ -86,18 +85,67 @@
                         <h3>Query ${index + 1}: ${entry.query}</h3>
                         <p><strong>Tokens:</strong> ${entry.tokens.join(', ')}</p>
                         <p><strong>Comparisons:</strong> ${entry.comparisons}</p>
-                        <h4>Top TF-IDF Scores:</h4>
-                        <ul>
-                            ${entry.tfidf_scores.map(doc => `
-                                <li>Doc ID: ${doc.doc_id}, Score: ${doc.score.toFixed(4)}</li>
-                            `).join('')}
-                        </ul>
+                        <canvas id="chart-${index}" class="tfidf-chart"></canvas>
                     `;
                     tfidfContent.appendChild(entryDiv);
+
+                    // Plot the chart for this query
+                    plotTfidfChart(entry.tfidf_scores, `chart-${index}`);
                 });
             } else {
                 tfidfContent.innerHTML = '<p>No TF-IDF data available.</p>';
             }
+        }
+
+        function plotTfidfChart(tfidfScores, chartId) {
+            const labels = tfidfScores.map(doc => doc.doc_id); // Extract Doc IDs
+            const scores = tfidfScores.map(doc => doc.score); // Extract Scores
+
+            const chartCanvas = document.getElementById(chartId).getContext('2d');
+
+            // Destroy any existing chart with the same ID
+            if (Chart.getChart(chartCanvas)) {
+                Chart.getChart(chartCanvas).destroy();
+            }
+
+            new Chart(chartCanvas, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'TF-IDF Scores',
+                        data: scores,
+                        backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true, // Maintain square aspect ratio
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top' // Place legend at the top
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Document IDs'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'TF-IDF Scores'
+                            }
+                        }
+                    }
+                }
+            });
         }
 
     </script>
