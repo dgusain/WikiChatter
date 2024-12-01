@@ -1,5 +1,4 @@
-# app2.py
-# export FLASK_ENV=production - write this before running the code
+
 import os
 import json
 from flask import Flask, render_template, request, jsonify, session
@@ -7,7 +6,6 @@ from flask_session import Session
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain_community.chat_models import ChatOpenAI
-#from langchain.chat_models import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
 from dotenv import load_dotenv
 
@@ -24,30 +22,21 @@ warnings.filterwarnings("ignore")  # Ignore all the warnings, avoid clutter in c
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", module="langchain")
 
-
-# Load environment variables
 load_dotenv()
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 
-# Initialize NLTK resources
-#nltk.download('punkt')
-#nltk.download('stopwords')
-
 app = Flask(__name__)
-app.secret_key = os.getenv('SECRET_KEY', 'your_secret_key_here')  # Replace with a secure secret key
+app.secret_key = os.getenv('SECRET_KEY', 'your_secret_key_here')  
 
-# Configure server-side session (optional but recommended for scalability)
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
-# Paths to data files
 INVERTED_INDEX_PATH = 'inverted_index.json'
 METADATA_PATH = 'metadata.json'
 SCRAPPED_DATA_PATH = 'final_scrapped.json'
 
-# Configuration for GPT-4o-mini via Ollama
 OLLAMA_MODEL = 'gpt-4o-mini'
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 class Preprocessor:
@@ -123,10 +112,6 @@ class DocumentRetriever:
 
     def _daat_and_with_tfidf(self, terms):
         inverted_index = self.inverted_index
-        # metadata = self.metadata
-        # total_documents = metadata.get('total_documents', 0)
-
-        # Initialize postings lists for each term
         postings_lists = []
         for term in terms:
             if term in inverted_index:
@@ -166,20 +151,8 @@ class DocumentRetriever:
             return []
 
         print(f"Processed Query Terms: {tokens}")
-        #tokens= ['taj', 'mahal','history']
-        #print(tokens)
-        # Retrieve and rank documents
         ranked_docs, comparisons = self._daat_and_with_tfidf(tokens)
-        #print(f"Total Comparisons Made: {comparisons}")
-        #print(f"Number of Documents Retrieved: {len(ranked_docs)}")
-
-        # Get top-k documents
         top_k_docs = ranked_docs[:k]
-        # print(f"Top {k} Documents:")
-        # for rank, (doc_id, score) in enumerate(top_k_docs, start=1):
-            # print(f"{rank}. Doc ID: {doc_id}, TF-IDF Score: {score:.4f}")
-
-        # Fetch summaries
         summaries = []
         for doc_id, score in top_k_docs:
             summary = self.doc_id_to_summary.get(doc_id, "No summary available.")
@@ -191,17 +164,10 @@ class DocumentRetriever:
 
         return summaries, comparisons, tokens
 
-
-
-# Initialize the DocumentRetriever
 retriever = DocumentRetriever(INVERTED_INDEX_PATH, METADATA_PATH, SCRAPPED_DATA_PATH)
-
-# Initialize Langchain's Ollama LLM
 llm = ChatOpenAI(model=OLLAMA_MODEL, temperature=0.2)  # Adjust temperature as needed
 
-# Paraphrase question
 def rephrase_question_with_history(chat_history, question):
-    # currently takes only the last question as chat history. Need to change this to append all previous convos for this session as chat.
     template = """
     Rephrase the following question to 5 standalone queries, each separated by '|', suitable for information retrieval. Ensure it contains all necessary context without relying on previous conversations.
     If the user's input contains gratitude expressions like "thanks," "thank you," "thanks a lot," or "much appreciated,", the generated query is the same as the question.
@@ -304,44 +270,44 @@ chitchat_chain = LLMChain(
 @app.route('/')
 def home():
     return render_template('index.html')
+import asyncio
 
 @app.route('/get_response', methods=['POST'])
-def get_response():
+async def get_response():
     user_input = request.json.get('message')
     if not user_input:
         return jsonify({'response': "I didn't receive any input."})
 
     memory.save_context({"user_input": user_input}, {"user_input": user_input})
     conversation_history = memory.load_memory_variables({})['conversation_history']
-    #print(f'conversation history is {conversation_history}')
 
     # Step 1: Determine Intent
-    intent = intent_chain.invoke({
+    intent = await intent_chain.acall({
         "conversation_history": conversation_history,
         "user_input": user_input
-    })["text"]
-    intent = intent.strip().lower()
+    })
+    intent = intent["text"].strip().lower()
     print(f"Determined Intent: {intent}")
+
     tfidf_data = []
     if 'query' in intent:
-        # Informational Query Handling
-        standalone_question = rephrase_question_with_history(conversation_history, user_input)
+        standalone_question = await rephrase_question_with_history(conversation_history, user_input)
         print(f'paraphrased question is: {standalone_question}')
         questions = standalone_question.split('|')
         total_context = ""
         total_q = ""
         for q in questions:
-            summaries, comparisons, tokens = retriever.retrieve_top_k(q, k=5)
+            summaries, comparisons, tokens = await asyncio.to_thread(retriever.retrieve_top_k, q, 5)
             if summaries:
                 context = ""
                 for idx, doc in enumerate(summaries, start=1):
                     url = retriever.doc_id_to_summary.get(doc['doc_id'], {}).get('url', 'URL not found')
                     context += f"Document{idx} (Doc ID: {doc['doc_id']}): {doc['summary']}\n"
                 tfidf_data.append({
-                    'query':q,
-                    'tfidf_scores':summaries,
-                    'comparisons':comparisons,
-                    'tokens':tokens
+                    'query': q,
+                    'tfidf_scores': summaries,
+                    'comparisons': comparisons,
+                    'tokens': tokens
                 })
             else:
                 context = "No relevant information found for this question\n"
@@ -349,30 +315,33 @@ def get_response():
             total_q += q
         print("Total context:\n", total_context)
         print("Total Q:\n", total_q)
-        print("Actual question:\n", questions[0])
-        breakpoint
-        answer = response_chain.invoke({
+
+        answer = await response_chain.acall({
             "context": total_context,
             "user_input": total_q
-        })["text"]
+        })
+        answer = answer["text"]
     else:
-        # Chitchat Handling
-        answer = chitchat_chain.invoke({
+        answer = await chitchat_chain.acall({
             "conversation_history": conversation_history,
             "user_input": user_input
-        })["text"]
+        })
+        answer = answer["text"]
 
-    # Append assistant response to memory
     memory.save_context({"assistant_output": answer}, {"assistant_output": answer})
 
     return jsonify({
         'response': answer,
-        'tfidf_data':tfidf_data
-        })
+        'tfidf_data': tfidf_data
+    })
+
 
 if __name__ == '__main__':
     app.run(debug=True)
     #app.run(host='0.0.0.0', port=5000, debug=True)
 
+# running the application
+#pip install gunicorn asyncio
+#gunicorn -w 4 async_app:app --bind 0.0.0.0:9999
 
 
