@@ -123,8 +123,6 @@ class DocumentRetriever:
 
     def _daat_and_with_tfidf(self, terms):
         inverted_index = self.inverted_index
-        # metadata = self.metadata
-        # total_documents = metadata.get('total_documents', 0)
 
         # Initialize postings lists for each term
         postings_lists = []
@@ -166,20 +164,10 @@ class DocumentRetriever:
             return []
 
         print(f"Processed Query Terms: {tokens}")
-        #tokens= ['taj', 'mahal','history']
-        #print(tokens)
-        # Retrieve and rank documents
         ranked_docs, comparisons = self._daat_and_with_tfidf(tokens)
-        #print(f"Total Comparisons Made: {comparisons}")
-        #print(f"Number of Documents Retrieved: {len(ranked_docs)}")
 
         # Get top-k documents
         top_k_docs = ranked_docs[:k]
-        # print(f"Top {k} Documents:")
-        # for rank, (doc_id, score) in enumerate(top_k_docs, start=1):
-            # print(f"{rank}. Doc ID: {doc_id}, TF-IDF Score: {score:.4f}")
-
-        # Fetch summaries
         summaries = []
         for doc_id, score in top_k_docs:
             summary = self.doc_id_to_summary.get(doc_id, "No summary available.")
@@ -190,8 +178,6 @@ class DocumentRetriever:
             })
 
         return summaries, comparisons, tokens
-
-
 
 # Initialize the DocumentRetriever
 retriever = DocumentRetriever(INVERTED_INDEX_PATH, METADATA_PATH, SCRAPPED_DATA_PATH)

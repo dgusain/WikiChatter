@@ -46,14 +46,23 @@ import torch
 class LlamaModel:
     def __init__(self, model_name="meta-llama/Llama-3.2-1b-instruct", device="cuda" if torch.cuda.is_available() else "cpu"):
         self.device = device
-        self.model = AutoModelForCausalLM.from_pretrained(model_name).to(self.device)
+        self.model = AutoModelForCausalLM.from_pretrained(model_name).half().to(self.device)
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     def generate_response(self, prompt):
         inputs = self.tokenizer(prompt, return_tensors="pt", truncation=True, max_length=2048).input_ids.to(self.device)
-        outputs = self.model.generate(inputs, max_new_tokens=500, temperature=0.7, top_p=0.9, top_k=50)
+        outputs = self.model.generate(
+            inputs,
+            max_new_tokens=500,
+            temperature=0.2,  # Lowered for more deterministic responses
+            top_p=0.9,
+            top_k=50,
+            do_sample=True,  # Enable sampling
+            eos_token_id=self.tokenizer.eos_token_id
+        )
         response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
         return response
+
 
 # Initialize the Llama model
 llama_model = LlamaModel()
@@ -187,27 +196,28 @@ retriever = DocumentRetriever(INVERTED_INDEX_PATH, METADATA_PATH, SCRAPPED_DATA_
 
 # Paraphrase question
 def rephrase_question_with_history(chat_history, question):
-    # Construct the prompt for rephrasing the question
     prompt = f"""
-    Rephrase the following question to 5 standalone queries, each separated by '|', suitable for information retrieval. Ensure it contains all necessary context without relying on previous conversations.
-    If the user's input contains gratitude expressions like "thanks," "thank you," "thanks a lot," or "much appreciated,", the generated query is the same as the question.
-
-    <chat_history>
+    <BEGIN CONVERSATION>
+    <SYSTEM>
+    You are an assistant that rephrases follow-up questions to be standalone questions, containing only important query terms.
+    </SYSTEM>
+    
+    <CONVERSATION HISTORY>
     {chat_history}
-    </chat_history>
-
-    Follow Up Input: {question}
-    Standalone questions:
+    </CONVERSATION HISTORY>
+    
+    <FOLLOW UP INPUT>
+    {question}
+    </FOLLOW UP INPUT>
+    
+    <STANDALONE QUESTIONS>
     """
-
-    # Use llama_model to generate the response
     response = llama_model.generate_response(prompt)
-
-    # Process the response to return the rephrased queries
     if response:
         return response.strip()
     else:
         return "Error: Response content not found."
+
 
 # Initialize Conversation Memory
 memory = ConversationBufferMemory(memory_key="conversation_history")
@@ -215,40 +225,66 @@ memory = ConversationBufferMemory(memory_key="conversation_history")
 # Initialize Chains
 def determine_intent(conversation_history, user_input):
     prompt = f"""
+    <BEGIN CONVERSATION>
+    <SYSTEM>
     You are an intelligent assistant. Determine the intent of the user's input based on the conversation history. Answer with either "chitchat" or "query".
     If the user's input contains gratitude expressions like "thanks," "thank you," "thanks a lot," or "much appreciated," classify it as "chitchat."
-
-    Conversation History:
+    </SYSTEM>
+    
+    <CONVERSATION HISTORY>
     {conversation_history}
-
-    User: {user_input}
-    Intent (chitchat/query):
+    </CONVERSATION HISTORY>
+    
+    <USER INPUT>
+    {user_input}
+    </USER INPUT>
+    
+    <INTENT>
     """
     return llama_model.generate_response(prompt).strip()
 
-def generate_response(context, user_input):
+
+def gen_response(context, user_input):
     prompt = f"""
-    You are an expert researcher with knowledge based on wikipedia. Use the following context to answer the user's question accurately and concisely. You are smart enough to handle edge cases. Like if there is only one relevant result, formulate it to generate an answer similar to the question asked. If there is no relavant data found, inform the user, and don't return an answer, else answer the question in coherence to the first question asked. Provide urls at the end, to indicate references used.
-
-    Context:
+    <BEGIN CONVERSATION>
+    <SYSTEM>
+    You are an expert researcher with knowledge based on Wikipedia. Use the following context to answer the user's question accurately and concisely. Handle edge cases effectively. If there's only one relevant result, formulate the answer similarly to the question asked. If no relevant data is found, inform the user without providing an answer. Always provide URLs at the end to indicate references used.
+    </SYSTEM>
+    
+    <CONTEXT>
     {context}
-
-    User: {user_input}
-    Answer:
+    </CONTEXT>
+    
+    <USER INPUT>
+    {user_input}
+    </USER INPUT>
+    
+    <ANSWER>
     """
     return llama_model.generate_response(prompt)
+
+
 
 def handle_chitchat(conversation_history, user_input):
     prompt = f"""
+    <BEGIN CONVERSATION>
+    <SYSTEM>
     You are a friendly and intelligent assistant. Engage in a natural and coherent conversation based on the user's input.
-
-    Conversation History:
+    </SYSTEM>
+    
+    <CONVERSATION HISTORY>
     {conversation_history}
-
-    User: {user_input}
-    Assistant:
+    </CONVERSATION HISTORY>
+    
+    <USER INPUT>
+    {user_input}
+    </USER INPUT>
+    
+    <ASSISTANT RESPONSE>
     """
     return llama_model.generate_response(prompt)
+
+
 
 
 @app.route('/')
