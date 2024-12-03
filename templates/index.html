@@ -45,6 +45,7 @@
                 <label><input type="checkbox" value="Travel"> Travel</label>
             </div>
             <button id="clear-topics" class="clear-button">Clear All</button>
+            <canvas id="scores-chart" class="scores-chart"></canvas>
         </div>
     </div>
 
@@ -107,6 +108,7 @@
                     appendMessage('chatbot', data.response, true);
                     displayTfidfData(data.tfidf_data);
                     displayLabelsData(data.labels_data);
+                    displayScoresData(data.scores_data, data.labels_data);
 
                     // Scroll to bottom of chat
                     chatBox.scrollTop = chatBox.scrollHeight;
@@ -206,6 +208,129 @@
                 checkbox.checked = normalizedLabelsData.includes(normalizedValue);
             });
         }
+        /*
+        function displayScoresData(scoresData, labelsData) {
+            const scoresChartCanvas = document.getElementById('scores-chart').getContext('2d');
+            
+            // Destroy existing chart if already present
+            if (Chart.getChart(scoresChartCanvas)) {
+                Chart.getChart(scoresChartCanvas).destroy();
+            }
+
+            // Create a new bar chart
+            new Chart(scoresChartCanvas, {
+                type: 'bar',
+                data: {
+                    labels: labelsData, // X-axis labels
+                    datasets: [{
+                        label: 'Scores',
+                        data: scoresData, // Y-axis values
+                        backgroundColor: 'rgba(54, 162, 235, 0.6)', // Bar color
+                        borderColor: 'rgba(54, 162, 235, 1)', // Border color
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top' // Position legend at the top
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Labels' // X-axis title
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Scores' // Y-axis title
+                            }
+                        }
+                    }
+                }
+            });
+        }
+*/
+        function displayScoresData(scoresData, labelsData) {
+            const scoresChartCanvas = document.getElementById('scores-chart').getContext('2d');
+            const chartLabels = labelsData.map((_, index) => (index + 1).toString()); // Replace labels with 1, 2, 3, etc.
+            const scoresPercentage = scoresData.map(score => score); // Convert scores to percentage
+            
+            // Destroy existing chart if already present
+            if (Chart.getChart(scoresChartCanvas)) {
+                Chart.getChart(scoresChartCanvas).destroy();
+            }
+
+            // Create a new bar chart
+            new Chart(scoresChartCanvas, {
+                type: 'bar',
+                data: {
+                    labels: chartLabels, // X-axis labels (1, 2, 3, etc.)
+                    datasets: [{
+                        label: 'Entailment Scores',
+                        data: scoresPercentage, // Y-axis values (in percentage)
+                        backgroundColor: 'rgba(54, 162, 235, 0.6)', // Bar color
+                        borderColor: 'rgba(54, 162, 235, 1)', // Border color
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top' // Position legend at the top
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Topics' // X-axis title
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Scores' // Y-axis title
+                            }
+                        }
+                    }
+                }
+            }); 
+
+            // Display actual labels below the chart
+            const topicsBox = document.getElementById('topics-box');
+            let actualLabelsElement = document.getElementById('actual-labels');
+
+            // Remove previous label list if present
+            if (actualLabelsElement) {
+                actualLabelsElement.remove();
+            }
+
+            // Create a new list for actual labels
+            actualLabelsElement = document.createElement('div');
+            actualLabelsElement.id = 'actual-labels';
+            actualLabelsElement.style.marginTop = '5px';
+            actualLabelsElement.style.fontSize = '14px';
+
+            // Combine labelsData and scoresData in the HTML list
+            const labelsHTML = labelsData.map((label, index) => 
+                `<p>${index + 1}: ${label} (Score: ${scoresData[index].toFixed(2)})</p>`).join('');
+
+            actualLabelsElement.innerHTML = `<h3>Legend</h3>${labelsHTML}`;
+            topicsBox.appendChild(actualLabelsElement);
+        }
+
 
     </script>
 </body>

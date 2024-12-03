@@ -139,7 +139,7 @@ h1 {
 .theme-toggle {
     position: absolute;
     top: 22px;
-    right: 25px; /* Move button to the top-right corner */
+    right: 30px; /* Move button to the top-right corner */
     background: none;
     border: none;
     font-size: 20px;
@@ -242,7 +242,7 @@ h1 {
 .topics-list {
     display: flex;
     flex-direction: column;
-    gap: 3px; /* Add more spacing between checkboxes */
+    gap: 1px; /* Add more spacing between checkboxes */
 }
 
 .topics-list label {
@@ -283,6 +283,12 @@ h1 {
     background-color: #f9f9f9; /* Light background for track */
 }
 
+.scores-chart {
+    margin-top: 20px;
+    width: 100%; /* Full width within topics box */
+    height: 200px; /* Fixed height */
+    max-width: 90%; /* Ensure chart fits neatly */
+}
 
 /* Main container adjustments for three columns */
 .main-container {
