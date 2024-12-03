@@ -198,7 +198,14 @@ retriever = DocumentRetriever(INVERTED_INDEX_PATH, METADATA_PATH, SCRAPPED_DATA_
 # Initialize Langchain's Ollama LLM
 llm = ChatOpenAI(model=OLLAMA_MODEL, temperature=0.2)  # Adjust temperature as needed
 
-def classify_query_top_k(query,k):
+def classify_query_top_k(query,select_topics, k):
+        candidate_labels = [
+            "Environment", "Health", "Economy", "Technology", 
+            "Entertainment", "Sports", "Education", "Politics and Government", 
+            "Food", "Travel"
+        ]
+        if len(select_topics) > 0:
+            candidate_labels = select_topics
         result = classifier(query, candidate_labels, multi_label=True, hypothesis_template="This text is about {}.")
         top_predictions = sorted(result["labels"], key=lambda x: result["scores"][result["labels"].index(x)], reverse=True)[:k]
         return top_predictions
@@ -312,6 +319,7 @@ def home():
 @app.route('/get_response', methods=['POST'])
 def get_response():
     user_input = request.json.get('message')
+    selected_topics = request.json.get('selected_topics', []) 
     if not user_input:
         return jsonify({'response': "I didn't receive any input."})
 
@@ -336,7 +344,7 @@ def get_response():
         total_context = ""
         temp = [q.strip() for q in questions]
         total_q = " ".join(temp)
-        labels = classify_query_top_k(total_q,k=3)
+        labels = classify_query_top_k(total_q,selected_topics,k=3)
         labels = [label.lower() for label in labels]
         print("Labels:",labels)
         labels_data = labels

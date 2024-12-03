@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Wikipedia Q/A Chatbot</title>
+    <title>WikiChatter</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Include Chart.js -->
 </head>
@@ -19,7 +19,7 @@
         <!-- Chat Window -->
         <div class="chat-container">
             <button id="theme-toggle" class="theme-toggle" title="Toggle Theme">🌙</button>
-            <h1>Wikipedia Q/A Chatbot</h1>
+            <h1>WikiChatter</h1>
             <div id="chat-box" class="chat-box">
                 <!-- Chat messages will appear here -->
             </div>
@@ -44,10 +44,18 @@
                 <label><input type="checkbox" value="Food"> Food</label><br>
                 <label><input type="checkbox" value="Travel"> Travel</label>
             </div>
+            <button id="clear-topics" class="clear-button">Clear All</button>
         </div>
     </div>
 
     <script>
+        const clearTopicsButton = document.getElementById('clear-topics');
+        clearTopicsButton.addEventListener('click', function () {
+            const checkboxes = document.querySelectorAll('.topics-list input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = false; // Uncheck all checkboxes
+            });
+        });
         const themeToggle = document.getElementById('theme-toggle');
         themeToggle.addEventListener('click', function () {
             document.body.classList.toggle('dark-theme');
@@ -78,13 +86,20 @@
             appendMessage('user', message);
             userInput.value = '';
 
+            const selectedTopics = Array.from(
+                document.querySelectorAll('.topics-list input[type="checkbox"]:checked') // Get all checked checkboxes
+            ).map(checkbox => checkbox.value);
+
             // Send message to server
             fetch('/get_response', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ message: message }),
+                body: JSON.stringify({ 
+                    message: message,
+                    selected_topics:selectedTopics
+                 }),
             })
                 .then(response => response.json())
                 .then(data => {

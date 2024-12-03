@@ -148,6 +148,20 @@ h1 {
     transition: color 0.3s;
 }
 
+.clear-button {
+    margin-top: 10px;
+    padding: 8px 12px;
+    background-color: var(--highlight-color);
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.clear-button:hover {
+    background-color: var(--chat-box-button);
+}
+
 /*.theme-toggle:hover {
     color: var(--highlight-color);
 }
