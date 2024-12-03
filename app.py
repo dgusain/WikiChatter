@@ -10,6 +10,7 @@ from langchain_community.chat_models import ChatOpenAI
 #from langchain.chat_models import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
 from dotenv import load_dotenv
+from transformers import pipeline
 
 import re
 import string
@@ -50,6 +51,14 @@ SCRAPPED_DATA_PATH = 'final_scrapped.json'
 # Configuration for GPT-4o-mini via Ollama
 OLLAMA_MODEL = 'gpt-4o-mini'
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
+
+candidate_labels = [
+        "Environment", "Health", "Economy", "Technology", 
+        "Entertainment", "Sports", "Education", "Politics and Government", 
+        "Food", "Travel"
+    ]
+
 class Preprocessor:
     def __init__(self):
         self.stop_words = set(stopwords.words('english'))
@@ -121,15 +130,15 @@ class DocumentRetriever:
             print(f"Error: The file '{path}' does not contain valid JSON.")
             return {}
 
-    def _daat_and_with_tfidf(self, terms):
+    def _daat_and_with_tfidf(self, terms, labels): # uses labels to filter
         inverted_index = self.inverted_index
-
         # Initialize postings lists for each term
         postings_lists = []
         for term in terms:
             if term in inverted_index:
                 postings = inverted_index[term]
-                postings_lists.append(set([posting['doc_id'] for posting in postings]))
+                postings_lists.append(set([posting['doc_id'] for posting in postings if posting['topic'].lower() in labels]))
+                #postings_lists.append(set([posting['doc_id'] for posting in postings]))
             else:
                 # If any term is not in the index, intersection is empty
                 return [], 0
@@ -156,15 +165,14 @@ class DocumentRetriever:
         sorted_docs = sorted(doc_tfidf_scores.items(), key=lambda x: x[1], reverse=True)
         return sorted_docs, total_comparisons
 
-    def retrieve_top_k(self, query, k=3):
+    def retrieve_top_k(self, query, labels, k=3):
         # Preprocess the query
         tokens = self.preprocessor.tokenize(query)
         if not tokens:
             print("No valid terms found in the query after preprocessing.")
             return []
-
         print(f"Processed Query Terms: {tokens}")
-        ranked_docs, comparisons = self._daat_and_with_tfidf(tokens)
+        ranked_docs, comparisons = self._daat_and_with_tfidf(tokens,labels)
 
         # Get top-k documents
         top_k_docs = ranked_docs[:k]
@@ -179,11 +187,21 @@ class DocumentRetriever:
 
         return summaries, comparisons, tokens
 
+
+    
+    
+    
+
 # Initialize the DocumentRetriever
 retriever = DocumentRetriever(INVERTED_INDEX_PATH, METADATA_PATH, SCRAPPED_DATA_PATH)
 
 # Initialize Langchain's Ollama LLM
 llm = ChatOpenAI(model=OLLAMA_MODEL, temperature=0.2)  # Adjust temperature as needed
+
+def classify_query_top_k(query,k):
+        result = classifier(query, candidate_labels, multi_label=True, hypothesis_template="This text is about {}.")
+        top_predictions = sorted(result["labels"], key=lambda x: result["scores"][result["labels"].index(x)], reverse=True)[:k]
+        return top_predictions
 
 # Paraphrase question
 def rephrase_question_with_history(chat_history, question):
@@ -309,15 +327,21 @@ def get_response():
     intent = intent.strip().lower()
     print(f"Determined Intent: {intent}")
     tfidf_data = []
+    labels_data = []
     if 'query' in intent:
         # Informational Query Handling
         standalone_question = rephrase_question_with_history(conversation_history, user_input)
         print(f'paraphrased question is: {standalone_question}')
         questions = standalone_question.split('|')
         total_context = ""
-        total_q = ""
+        temp = [q.strip() for q in questions]
+        total_q = " ".join(temp)
+        labels = classify_query_top_k(total_q,k=3)
+        labels = [label.lower() for label in labels]
+        print("Labels:",labels)
+        labels_data = labels
         for q in questions:
-            summaries, comparisons, tokens = retriever.retrieve_top_k(q, k=5)
+            summaries, comparisons, tokens = retriever.retrieve_top_k(q, labels, k=5)
             if summaries:
                 context = ""
                 for idx, doc in enumerate(summaries, start=1):
@@ -327,8 +351,9 @@ def get_response():
                     'query':q,
                     'tfidf_scores':summaries,
                     'comparisons':comparisons,
-                    'tokens':tokens
+                    'tokens':tokens 
                 })
+                #labels_data.append(labels)
             else:
                 context = "No relevant information found for this question\n"
             total_context += f"rephrased question:{q} \n context:{context}"
@@ -350,10 +375,11 @@ def get_response():
 
     # Append assistant response to memory
     memory.save_context({"assistant_output": answer}, {"assistant_output": answer})
-
+    print("Sending the labels: ",labels_data)
     return jsonify({
         'response': answer,
-        'tfidf_data':tfidf_data
+        'tfidf_data':tfidf_data,
+        'labels_data':labels_data
         })
 
 if __name__ == '__main__':

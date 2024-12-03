@@ -17,7 +17,7 @@ body {
 
 /* Chat container styling */
 .chat-container {
-    width: 800px;
+    width: 600px;
     background-color: #fff;
     border-radius: 10px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
@@ -33,6 +33,7 @@ h1 {
     height: 600px;
     overflow-y: scroll;
     border: 1px solid #ddd;
+    border-radius: 5px;
     padding: 10px;
     margin-bottom: 20px;
     background-color: #fafafa;
@@ -150,4 +151,78 @@ h1 {
     height: 300px; /* Fixed height */
     width: 300px; /* Fixed width to make it square */
     max-width: 90%; /* Ensure chart fits within the TF-IDF entry */
+}
+
+/* Topics container styling */
+/* Topics container styling */
+.topics-box {
+    width: 250px; /* Slightly wider for better visibility */
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    overflow-y: auto; /* Enable vertical scrolling */
+    max-height: 700px; /* Limit the height of the Topics box */
+}
+
+.topics-box h2 {
+    text-align: center;
+    color: #333;
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 30px;
+}
+
+.topics-list {
+    display: flex;
+    flex-direction: column;
+    gap: 3px; /* Add more spacing between checkboxes */
+}
+
+.topics-list label {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Space between checkbox and label text */
+    font-size: 16px;
+    cursor: pointer; /* Pointer cursor for better interactivity */
+    color: #444;
+}
+
+.topics-list label:hover {
+    background-color: #f0f0f0; /* Highlight background on hover */
+    border-radius: 5px; /* Rounded edges on hover */
+    /*padding: 5px; /* Add padding to highlight area */
+}
+
+.topics-list input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.topics-box::-webkit-scrollbar {
+    width: 8px;
+}
+
+.topics-box::-webkit-scrollbar-thumb {
+    background-color: #ccc; /* Gray scrollbar */
+    border-radius: 4px;
+}
+
+.topics-box::-webkit-scrollbar-thumb:hover {
+    background-color: #aaa; /* Darker gray on hover */
+}
+
+.topics-box::-webkit-scrollbar-track {
+    background-color: #f9f9f9; /* Light background for track */
+}
+
+
+/* Main container adjustments for three columns */
+.main-container {
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr; /* Three-column layout */
+    gap: 20px;
+    max-width: 1400px;
+    margin: 20px auto;
 }

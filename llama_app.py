@@ -199,7 +199,7 @@ def rephrase_question_with_history(chat_history, question):
     prompt = f"""
     <BEGIN CONVERSATION>
     <SYSTEM>
-    You are an assistant that rephrases follow-up questions to be standalone questions, containing only important query terms.
+    You are an assistant that uses chat history to rephrase the question to generate 5 standalone queries, that  rephrases follow-up questions to be standalone questions, containing only important query terms.
     </SYSTEM>
     
     <CONVERSATION HISTORY>
