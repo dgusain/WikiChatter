@@ -18,6 +18,7 @@
     
         <!-- Chat Window -->
         <div class="chat-container">
+            <button id="theme-toggle" class="theme-toggle" title="Toggle Theme">🌙</button>
             <h1>Wikipedia Q/A Chatbot</h1>
             <div id="chat-box" class="chat-box">
                 <!-- Chat messages will appear here -->
@@ -45,6 +46,20 @@
             </div>
         </div>
     </div>
+
+    <script>
+        const themeToggle = document.getElementById('theme-toggle');
+        themeToggle.addEventListener('click', function () {
+            document.body.classList.toggle('dark-theme');
+            if (document.body.classList.contains('dark-theme')) {
+                themeToggle.textContent = '◑'; // Sun icon for light theme
+                themeToggle.title = 'Switch to Light Theme';
+            } else {
+                themeToggle.textContent = '◑'; // Moon icon for dark theme
+                themeToggle.title = 'Switch to Dark Theme';
+            }
+        });
+    </script>
 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>

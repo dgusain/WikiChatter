@@ -1,7 +1,42 @@
+/* Define CSS variables for light theme */
+:root {
+    --bg-color: #f2f2f2;
+    --text-color: #333;
+    --box-bg-color: #fff;
+    --box-shadow-color: rgba(0, 0, 0, 0.1);
+    --box-border-color:#ddd;
+    --highlight-color: #4CAF50;
+    --user-bubble-bg: #e0f7fa;
+    --user-bubble-text: #004d40;
+    --chatbot-bubble-bg: #ffe0b2;
+    --chatbot-bubble-text: #4e342e;
+    --label-color-hover:#aaa;
+    --label-color-text: #444;
+    --chat-box-button: #45a049;
+}
+
+/* Define CSS variables for dark theme */
+.dark-theme {
+    --bg-color: #121212;
+    --text-color: #f2f2f2;
+    --box-bg-color: #333; /* Grey background for dark mode */
+    --box-shadow-color: rgba(0, 0, 0, 0.5);
+    --box-border-color:#a2a0a0;
+    --highlight-color: #1360b3;
+    --user-bubble-bg:#3d89da;
+    --user-bubble-text: #e2e9e8;
+    --chatbot-bubble-bg: #999;
+    --chatbot-bubble-text: #fff;
+    --label-color-hover:#666;
+    --label-color-text: #999;
+    --h2-text-color: #fff;
+    --chat-box-button: #054182;
+}
 /* General body styling */
 body {
     font-family: Arial, sans-serif;
-    background-color: #f2f2f2;
+    background-color: var(--bg-color);
+    color: var(--text-color);
     margin: 0;
     padding: 0;
 }
@@ -18,25 +53,25 @@ body {
 /* Chat container styling */
 .chat-container {
     width: 600px;
-    background-color: #fff;
+    background-color:var(--box-bg-color);
     border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 10px var(--box-shadow-color);
     padding: 20px;
 }
 
 h1 {
     text-align: center;
-    color: #333;
+    color: var(--h2-text-color);
 }
 
 .chat-box {
     height: 600px;
     overflow-y: scroll;
-    border: 1px solid #ddd;
+    border: 1px solid var(--box-border-color);
     border-radius: 5px;
     padding: 10px;
     margin-bottom: 20px;
-    background-color: #fafafa;
+    background-color: var(--box-bg-color); 
     display: flex;
     flex-direction: column;
 }
@@ -64,14 +99,14 @@ h1 {
 }
 
 .message.user .bubble {
-    background-color: #e0f7fa; /* Light blue for user */
-    color: #004d40;
+    background-color: var(--user-bubble-bg);
+    color: var(--user-bubble-text);
     border-top-right-radius: 0; /* Make the right corner sharp */
 }
 
 .message.chatbot .bubble {
-    background-color: #ffe0b2; /* Light orange for chatbot */
-    color: #4e342e;
+    background-color: var(--chatbot-bubble-bg);
+    color: var(--chatbot-bubble-text);
     border-top-left-radius: 0; /* Make the left corner sharp */
 }
 
@@ -82,7 +117,7 @@ h1 {
 .chat-form input {
     flex: 1;
     padding: 10px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--box-border-color);
     border-radius: 5px 0 0 5px;
     outline: none;
 }
@@ -90,22 +125,39 @@ h1 {
 .chat-form button {
     padding: 10px 20px;
     border: none;
-    background-color: #4CAF50;
+    background-color: var(--highlight-color);
     color: #fff;
     border-radius: 0 5px 5px 0;
     cursor: pointer;
 }
 
 .chat-form button:hover {
-    background-color: #45a049;
+    background-color: var(--chat-box-button);
+}
+
+/* Theme toggle button */
+.theme-toggle {
+    position: absolute;
+    top: 22px;
+    right: 25px; /* Move button to the top-right corner */
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: var(--text-color);
+    transition: color 0.3s;
+}
+
+/*.theme-toggle:hover {
+    color: var(--highlight-color);
 }
 
 /* TF-IDF container styling */
 .tfidf-box {
     width: 400px;
-    background-color: #fff;
+    background-color: var(--box-bg-color);
     border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 10px var(--box-shadow-color);
     padding: 20px;
     overflow-y: auto; /* Enable vertical scrolling */
     max-height: 700px; /* Limit the height of the TF-IDF box */
@@ -113,7 +165,7 @@ h1 {
 
 .tfidf-box h2 {
     text-align: center;
-    color: #333;
+    color: var(--h2-text-color);
     margin-bottom: 20px;
 }
 
@@ -126,23 +178,23 @@ h1 {
 /* Individual TF-IDF entry styling */
 .tfidf-entry {
     margin-bottom: 20px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--box-border-color);
     border-radius: 10px;
     padding: 15px;
-    background-color: #f9f9f9;
+    background-color: var(--box-bg-color);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .tfidf-entry h3 {
     margin-bottom: 10px;
     font-size: 16px;
-    color: #555;
+    color: var(--label-color-text);
 }
 
 .tfidf-entry p {
     margin: 5px 0;
     font-size: 14px;
-    color: #444;
+    color: var(--label-color-text);
 }
 
 /* Chart container inside TF-IDF entries */
@@ -157,9 +209,9 @@ h1 {
 /* Topics container styling */
 .topics-box {
     width: 250px; /* Slightly wider for better visibility */
-    background-color: #fff;
+    background-color: var(--box-bg-color);
     border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 10px var(--box-shadow-color);
     padding: 20px;
     overflow-y: auto; /* Enable vertical scrolling */
     max-height: 700px; /* Limit the height of the Topics box */
@@ -167,7 +219,7 @@ h1 {
 
 .topics-box h2 {
     text-align: center;
-    color: #333;
+    color: var(--h2-text-color);
     font-size: 24px;
     font-weight: bold;
     margin-bottom: 30px;
@@ -185,7 +237,7 @@ h1 {
     gap: 10px; /* Space between checkbox and label text */
     font-size: 16px;
     cursor: pointer; /* Pointer cursor for better interactivity */
-    color: #444;
+    color: var(--label-color-text);
 }
 
 .topics-list label:hover {
