@@ -5,7 +5,7 @@ Wikipedia chatbot with local knowledge leveraging classical IR techniques for ef
 
 ## Inverted Index location
 
-Please download from [inverted-index.json](https://buffalo.box.com/s/bfeg1acj24dnz75bt0nuh12tc6abxq1g) and place in the root directory.
+Please download from [inverted-index.json](https://buffalo.box.com/s/ovoeppydgdol89u6c2cethq90v05s6ui) and place in the root directory.
 
 ## Code Execution
 
