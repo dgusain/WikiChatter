@@ -197,7 +197,18 @@ retriever = DocumentRetriever(INVERTED_INDEX_PATH, METADATA_PATH, SCRAPPED_DATA_
 
 # Initialize Langchain's Ollama LLM
 llm = ChatOpenAI(model=OLLAMA_MODEL, temperature=0.2)  # Adjust temperature as needed
-
+'''
+def classify_query_with_scores(query, top_k=3):
+    # Perform zero-shot classification
+    result = classifier(query, candidate_labels, multi_label=True, hypothesis_template="This text is about {}.")
+    
+    # Combine labels and scores into tuples and sort them
+    label_score_pairs = list(zip(result["labels"], result["scores"]))
+    sorted_label_score_pairs = sorted(label_score_pairs, key=lambda x: x[1], reverse=True)
+    
+    # Return the top-k results
+    return sorted_label_score_pairs[:top_k]
+'''
 def classify_query_top_k(query,select_topics, k):
         candidate_labels = [
             "Environment", "Health", "Economy", "Technology", 
@@ -206,8 +217,11 @@ def classify_query_top_k(query,select_topics, k):
         ]
         if len(select_topics) > 0:
             candidate_labels = select_topics
+            k = len(select_topics)
         result = classifier(query, candidate_labels, multi_label=True, hypothesis_template="This text is about {}.")
-        top_predictions = sorted(result["labels"], key=lambda x: result["scores"][result["labels"].index(x)], reverse=True)[:k]
+        label_score_pairs = list(zip(result["labels"], result["scores"]))
+        top_predictions = sorted(label_score_pairs, key=lambda x: x[1], reverse=True)[:k]
+        #top_predictions = sorted(result["labels"], key=lambda x: result["scores"][result["labels"].index(x)], reverse=True)[:k]
         return top_predictions
 
 # Paraphrase question
@@ -336,6 +350,7 @@ def get_response():
     print(f"Determined Intent: {intent}")
     tfidf_data = []
     labels_data = []
+    scores_data = []
     if 'query' in intent:
         # Informational Query Handling
         standalone_question = rephrase_question_with_history(conversation_history, user_input)
@@ -344,10 +359,17 @@ def get_response():
         total_context = ""
         temp = [q.strip() for q in questions]
         total_q = " ".join(temp)
-        labels = classify_query_top_k(total_q,selected_topics,k=3)
+        predictions = classify_query_top_k(total_q,selected_topics,k=3)
+        labels = []
+        scores = []
+        for l,s in predictions:
+            labels.append(l)
+            scores.append(s)
+        
         labels = [label.lower() for label in labels]
         print("Labels:",labels)
         labels_data = labels
+        scores_data = scores
         for q in questions:
             summaries, comparisons, tokens = retriever.retrieve_top_k(q, labels, k=5)
             if summaries:
@@ -387,7 +409,8 @@ def get_response():
     return jsonify({
         'response': answer,
         'tfidf_data':tfidf_data,
-        'labels_data':labels_data
+        'labels_data':labels_data,
+        'scores_data':scores_data
         })
 
 if __name__ == '__main__':
